@@ -67,26 +67,41 @@ $(document).ready(function(){
   }
 
   window.onkeyup = function(e) {
-    if (e.keyCode == 16) {
-      envs[0].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
-      player = null;
+
+    for (var i = 0; i < keyList.length; i++) {
+      if (e.keyCode == keyList[i]) {
+        envs[i].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
+        players[i] = null;
+      }
     }
-    if (e.keyCode == 32) {
-      envs[1].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
-      player = null;
-    }
-    if (e.keyCode == 68) {
-      envs[2].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
-      player = null;
-    }
+
+    // if (e.keyCode == 16) {
+    //   envs[0].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
+    //   player = null;
+    // }
+    // if (e.keyCode == 32) {
+    //   envs[1].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
+    //   player = null;
+    // }
+    // if (e.keyCode == 68) {
+    //   envs[2].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
+    //   player = null;
+    // }
     if (e.keyCode == 81) {
       rate = rate / 2;
       $('#rate').text(rate);
+      players.forEach(function(player){
+        player.playbackRate = rate;
+      });
 
     }
     if (e.keyCode == 87) {
       rate = rate * 2;
       $('#rate').text(rate);
+      players.forEach(function(player){
+        player.playbackRate = rate;
+      });
+
     }
     if (e.keyCode == 69) {
       filt.frequency += 10;

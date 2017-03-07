@@ -44,7 +44,7 @@ $(document).ready(function(){
   }
 
   //create dummy player (null) in players array and populate envelopes array
-  for (var i = 0; i <= numSamples; i++) {
+  for (var i = 0; i < numSamples; i++) {
     players.push(null);
     envs.push(audioContext.createGain());
   }
@@ -66,29 +66,33 @@ $(document).ready(function(){
     request.send()
   }
 
-  var play = function(player, env, file, keyDown){
-    if (!keyDown) {
-      if (!player) {
-        player = audioContext.createBufferSource();
-        player.connect(env);
-        env.gain.setTargetAtTime(1, audioContext.currentTime, 0.9);
-      }
-      getSample(file, function play (buffer) {
-        if (player.buffer === null) {
-          player.buffer = buffer
+  var play = function(player, env, file, i){
+      if (!keyDown[i]) {
+        console.log(player);
+        console.log(players);
+        if (!player) {
+          player = audioContext.createBufferSource();
+          players[i] = player;
+          player.connect(env);
+          env.gain.setTargetAtTime(1, audioContext.currentTime, 0.9);
+          getSample(file, function play (buffer) {
+            if (player.buffer === null) {
+              player.buffer = buffer
+            }
+            player.start(startTime)
+            player.playbackRate.value = rate;
+            player.loop = true;
+          });
         }
-        player.start(startTime)
-        player.playbackRate.value = rate;
-        player.loop = true;
-      });
-    }
+      }
+
   }
 
   //init player, play sound, set keydown throttle
   window.onkeydown = function(e) {
     for (var i = 0; i < keyList.length; i++) {
       if (e.keyCode == keyList[i]) {
-        play(players[i], envs[i], '../assets/loop'+(i + 1)+'.wav', keyDown[i]);
+        play(players[i], envs[i], '../assets/loop'+(i + 1)+'.wav', i);
         keyDown[i] = true;
       }
     }
@@ -108,23 +112,19 @@ $(document).ready(function(){
       rate = rate / 2;
       $('#rate').text(rate);
       players.forEach(function(player){
-        player.playbackRate = rate;
+        if (player) {
+          player.playbackRate = rate;
+        }
       });
-
     }
     if (e.keyCode == 87) {
       rate = rate * 2;
       $('#rate').text(rate);
       players.forEach(function(player){
-        player.playbackRate = rate;
+        if (player) {
+          player.playbackRate = rate;
+        }
       });
-
-    }
-    if (e.keyCode == 69) {
-      filt.frequency += 10;
-    }
-    if (e.keyCode == 82) {
-      filt.frequency -= 10;
     }
   }
 

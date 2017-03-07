@@ -16,6 +16,7 @@ $(document).ready(function(){
   var filt = audioContext.createBiquadFilter();
   filt.connect(audioContext.destination);
   filt.frequency.value = 2000;
+  $('#filter').val(2000 / 20)
   $('#filter').on('input change', function(e){
     filt.frequency.value = e.currentTarget.value * 20;;
   });
@@ -29,11 +30,13 @@ $(document).ready(function(){
   lfo.frequency.value = 2;
   lfo.connect(tremelo.gain);
   lfo.start(audioContext.currentTime);
+  $('#tremelo').val(2 / .08);
   $('#tremelo').on('input change', function(e){
     lfo.frequency.value = e.currentTarget.value * .08;
   });
 
   //set decay
+  $('#decay').val(decay * 100);
   $('#decay').on('input change', function(e){
     decay = (e.currentTarget.value / 100) * 10 + .001;
   });
@@ -121,12 +124,14 @@ $(document).ready(function(){
     for (var i = 0; i < keyList.length; i++) {
       if (e.keyCode == keyList[i]) {
         var idx = i;
-        player = players[idx];
+        player = players[i];
         envs[idx].gain.setTargetAtTime(0, audioContext.currentTime, secondsToTimeConstant(decay));
         setTimeout(function(){
           console.log('stop');
           players[idx] = null;
-          player.stop();
+          if (players[idx]) {
+            players[idx].stop();
+          }
         }, decay * 1000 + 50)
         keyDown[idx] = false;
       }
@@ -152,9 +157,6 @@ $(document).ready(function(){
     }
   }
 
-  setInterval(function(){
-    console.log(players);
-  }, 1000)
 
 
 

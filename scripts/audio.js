@@ -1,4 +1,5 @@
 $(document).ready(function(){
+  //init sum stuff
   var audioContext = new AudioContext()
   var startTime = 0;
   var spaceDown;
@@ -10,14 +11,15 @@ $(document).ready(function(){
   var players = [];
   var envs = [];
 
+  //init lowpass filter
   var filt = audioContext.createBiquadFilter();
   filt.connect(audioContext.destination);
   filt.frequency.value = 2000;
   $('#filter').on('input change', function(e){
     filt.frequency.value = e.currentTarget.value * 20;;
-    console.log(filt.frequency.value)
   });
 
+  //init tremelo and ctrl lfo
   var tremelo = audioContext.createGain();
   tremelo.connect(filt);
   tremelo.gain.value = 0;
@@ -28,7 +30,6 @@ $(document).ready(function(){
   lfo.start(audioContext.currentTime);
   $('#tremelo').on('input change', function(e){
     lfo.frequency.value = e.currentTarget.value * .08;
-    console.log(lfo.frequency.value);
   });
 
 
@@ -37,17 +38,24 @@ $(document).ready(function(){
     32, // Space
     68 // D
   ];
+  var keyDown = [];
+  for (var i = 0; i < keyList.length; i++) {
+    keyDown.push(false);
+  }
+
+  //create dummy player (null) in players array and populate envelopes array
   for (var i = 0; i <= numSamples; i++) {
     players.push(null);
     envs.push(audioContext.createGain());
   }
 
+  //connect envelopes to FX chain (tremelo -> filter)
   envs.forEach(function(env){
     env.connect(tremelo);
     env.gain.value = 0;
   })
 
-
+  //does what it sez on the tin.
   function getSample (url, cb, player) {
     var request = new XMLHttpRequest()
     request.open('GET', url, true)
@@ -58,35 +66,44 @@ $(document).ready(function(){
     request.send()
   }
 
+  var play = function(player, env, file, keyDown){
+    if (!keyDown) {
+      if (!player) {
+        player = audioContext.createBufferSource();
+        player.connect(env);
+        env.gain.setTargetAtTime(1, audioContext.currentTime, 0.9);
+      }
+      getSample(file, function play (buffer) {
+        if (player.buffer === null) {
+          player.buffer = buffer
+        }
+        player.start(startTime)
+        player.playbackRate.value = rate;
+        player.loop = true;
+      });
+    }
+  }
+
+  //init player, play sound, set keydown throttle
   window.onkeydown = function(e) {
     for (var i = 0; i < keyList.length; i++) {
       if (e.keyCode == keyList[i]) {
-        play(players[i], envs[i], '../assets/loop'+(i + 1)+'.wav');
+        play(players[i], envs[i], '../assets/loop'+(i + 1)+'.wav', keyDown[i]);
+        keyDown[i] = true;
       }
     }
   }
 
   window.onkeyup = function(e) {
-
+    //stop sounds and reset players/keytracker
     for (var i = 0; i < keyList.length; i++) {
       if (e.keyCode == keyList[i]) {
         envs[i].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
         players[i] = null;
+        keyDown[i] = false;
       }
     }
 
-    // if (e.keyCode == 16) {
-    //   envs[0].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
-    //   player = null;
-    // }
-    // if (e.keyCode == 32) {
-    //   envs[1].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
-    //   player = null;
-    // }
-    // if (e.keyCode == 68) {
-    //   envs[2].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
-    //   player = null;
-    // }
     if (e.keyCode == 81) {
       rate = rate / 2;
       $('#rate').text(rate);
@@ -108,25 +125,9 @@ $(document).ready(function(){
     }
     if (e.keyCode == 82) {
       filt.frequency -= 10;
-      console.log(filt.frequency);
     }
   }
 
-  var play = function(player, env, file){
-    if (!player) {
-      player = audioContext.createBufferSource();
-      player.connect(env);
-      env.gain.setTargetAtTime(1, audioContext.currentTime, 0.9);
-    }
-    getSample(file, function play (buffer) {
-      if (player.buffer === null) {
-        player.buffer = buffer
-      }
-      player.start(startTime)
-      player.playbackRate.value = rate;
-      player.loop = true;
-    });
-  }
 
 
 

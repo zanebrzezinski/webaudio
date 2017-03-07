@@ -10,6 +10,7 @@ $(document).ready(function(){
   $('#rate').text(rate);
   var players = [];
   var envs = [];
+  var decay = 10;
 
   //init lowpass filter
   var filt = audioContext.createBiquadFilter();
@@ -31,6 +32,15 @@ $(document).ready(function(){
   $('#tremelo').on('input change', function(e){
     lfo.frequency.value = e.currentTarget.value * .08;
   });
+
+  //set decay
+  $('#decay').on('input change', function(e){
+    decay = (e.currentTarget.value / 100) * 10 + .001;
+  });
+
+  var secondsToTimeConstant = function(sec){
+    return (sec * 2) / 10;
+  }
 
 
   var keyList = [
@@ -55,6 +65,15 @@ $(document).ready(function(){
     env.gain.value = 0;
   })
 
+  $('#stop').on('click', function(){
+    for (var i = 0; i < players.length; i++) {
+      if (players[i]) {
+        players[i].stop();
+        players[i] = null;
+      }
+    }
+  });
+
   //does what it sez on the tin.
   function getSample (url, cb, player) {
     var request = new XMLHttpRequest()
@@ -67,26 +86,25 @@ $(document).ready(function(){
   }
 
   var play = function(player, env, file, i){
-      if (!keyDown[i]) {
-        console.log(player);
-        console.log(players);
-        if (!player) {
-          player = audioContext.createBufferSource();
-          players[i] = player;
-          player.connect(env);
-          env.gain.setTargetAtTime(1, audioContext.currentTime, 0.9);
-          getSample(file, function play (buffer) {
-            if (player.buffer === null) {
-              player.buffer = buffer
-            }
-            player.start(startTime)
-            player.playbackRate.value = rate;
-            player.loop = true;
-          });
-        }
+    if (!keyDown[i]) {
+      if (!player) {
+        player = audioContext.createBufferSource();
+        players[i] = player;
+        player.connect(env);
+        env.gain.value = 0;
+        env.gain.setTargetAtTime(1, audioContext.currentTime, 0.9);
+        getSample(file, function play (buffer) {
+          if (player.buffer === null) {
+            player.buffer = buffer
+          }
+          player.start(startTime)
+          player.playbackRate.value = rate;
+          player.loop = true;
+        });
       }
-
+    }
   }
+
 
   //init player, play sound, set keydown throttle
   window.onkeydown = function(e) {
@@ -102,9 +120,15 @@ $(document).ready(function(){
     //stop sounds and reset players/keytracker
     for (var i = 0; i < keyList.length; i++) {
       if (e.keyCode == keyList[i]) {
-        envs[i].gain.setTargetAtTime(0, audioContext.currentTime + 1, 0.9);
-        players[i] = null;
-        keyDown[i] = false;
+        var idx = i;
+        player = players[idx];
+        envs[idx].gain.setTargetAtTime(0, audioContext.currentTime, secondsToTimeConstant(decay));
+        setTimeout(function(){
+          console.log('stop');
+          players[idx] = null;
+          player.stop();
+        }, decay * 1000 + 50)
+        keyDown[idx] = false;
       }
     }
 
@@ -127,6 +151,10 @@ $(document).ready(function(){
       });
     }
   }
+
+  setInterval(function(){
+    console.log(players);
+  }, 1000)
 
 
 

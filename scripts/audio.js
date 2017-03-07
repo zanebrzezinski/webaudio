@@ -1,5 +1,5 @@
 $(document).ready(function(){
-  //init sum stuff
+  //init sum stuff. lots of init constants for a while here....
   var audioContext = new AudioContext()
   var startTime = 0;
   var spaceDown;
@@ -11,6 +11,7 @@ $(document).ready(function(){
   var players = [];
   var envs = [];
   var decay = 10;
+  var attack = .5;
 
   //init lowpass filter
   var filt = audioContext.createBiquadFilter();
@@ -35,10 +36,14 @@ $(document).ready(function(){
     lfo.frequency.value = e.currentTarget.value * .08;
   });
 
-  //set decay
+  //set decay and decay
   $('#decay').val(decay * 100);
   $('#decay').on('input change', function(e){
     decay = (e.currentTarget.value / 100) * 10 + .001;
+  });
+  $('#attack').val(attack * 100);
+  $('#attack').on('input change', function(e){
+    attack = (e.currentTarget.value / 100) * 10 + .001;
   });
 
   var secondsToTimeConstant = function(sec){
@@ -95,7 +100,8 @@ $(document).ready(function(){
         players[i] = player;
         player.connect(env);
         env.gain.value = 0;
-        env.gain.setTargetAtTime(1, audioContext.currentTime, 0.9);
+        // env.gain.setTargetAtTime(1, audioContext.currentTime, 0.9);
+        env.gain.linearRampToValueAtTime(1, audioContext.currentTime + attack)
         getSample(file, function play (buffer) {
           if (player.buffer === null) {
             player.buffer = buffer
@@ -125,14 +131,15 @@ $(document).ready(function(){
       if (e.keyCode == keyList[i]) {
         var idx = i;
         player = players[i];
-        envs[idx].gain.setTargetAtTime(0, audioContext.currentTime, secondsToTimeConstant(decay));
+        // envs[idx].gain.setTargetAtTime(0, audioContext.currentTime, secondsToTimeConstant(decay));
+        envs[idx].gain.linearRampToValueAtTime(0, audioContext.currentTime + decay)
         setTimeout(function(){
           console.log('stop');
           players[idx] = null;
           if (players[idx]) {
             players[idx].stop();
           }
-        }, decay * 1000 + 50)
+        }, decay * 1000 + 100)
         keyDown[idx] = false;
       }
     }
